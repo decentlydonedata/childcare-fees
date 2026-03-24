@@ -179,10 +179,7 @@ all_states <- all_states %>% group_by(date)
 
 all_data <- left_join(all_fees, all_states, by = c("date", "city"))
 
-small <- all_fees %>% filter(is.na(mean_fee)) # Postcodes with less that 5 services and therefore without fees
 
+setwd("C:/Users/Chloe/Downloads/ECC3479/childcare-fees/data")
 
-
-
-summary(all_fees)
-table(all_fees$file_source)
+write_csv(all_data, file = "clean/clean_data.csv")
