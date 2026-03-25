@@ -111,9 +111,39 @@ cap_data %>% filter(city == "dar", sa3_code == "70103") %>% select(mean_fee, ind
 cap_data <- cap_data %>% filter(sa3_code != "70103")
 cap_data <- cap_data %>%
   mutate(adj_fee = mean_fee*index_prescpi/100,
-         prop_above = above_cap/service_count)
+         prop_above = above_cap/service_count,
+         aprox_sub = index_fee - index_cccpi)
 
-ggplot(cap_data, aes(x = date, y = index_cccpi, colour = city)) + geom_point()
-ggplot(cap_data, aes(x = date, y = index_cpi, colour = city)) + geom_point() 
-ggplot(cap_data, aes(x = date, y = index_fee, colour = city)) + geom_point()
-ggplot(cap_data, aes(x = date, y = adj_fee, colour = city)) + geom_point()
+ggplot(cap_data, aes(x = date, y = index_cccpi, colour = city)) + 
+  geom_point() + # Childcare CPI indexed to 2018
+  geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
+  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+# The changes to out of pocket childcare costs have been punctuated by policy changes
+# The addition of a sibling discount in 2022 and the Cheaper childcare bill in 2023
+# It should be noted that the rate of child care cost growth after these policy changes are visibly higher (steeper slope)
+# particularly in Canberra, Perth and Brisbane.
+
+ggplot(cap_data, aes(x = date, y = index_cpi, colour = city)) + geom_point() + # CPI indexed to 2018
+  geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
+  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+# The CPI has increased across capital cities relatively uniformly over time with very high inflation in the post-COVID period by has since slowed
+
+ggplot(cap_data, aes(x = date, y = index_fee, colour = city)) + geom_point() + # Fees indexed to 2018 fee price in SA4
+  geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
+  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+# Fees have grown heterogeneously across cities, with Brisbane, Perth fees growing at more than other cities
+
+ggplot(cap_data, aes(x = date, y = adj_fee, colour = city)) + geom_point() + # Fees in 2024 $
+  geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
+  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+# After adjusting the nominal fees for inflation the hourly cost of childcare has increased by at least $6 per hour in real terms
+
+ggplot(cap_data, aes(x = date, y = mean_fee, colour = city)) + geom_point() + # Nominal Fees
+  geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
+  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+# After the policy changes not only is there a spike in nominal fees, but also the rate of growth in nominal fees is higher than in prior periods
+
+ggplot(cap_data, aes(x = date, y = aprox_sub, colour = city)) + geom_point() + # Approximate subsidy
+  geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
+  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
+
