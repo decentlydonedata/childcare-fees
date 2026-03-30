@@ -1,7 +1,8 @@
 library(tidyverse)
 library(patchwork)
+library(here)
 
-setwd("C:/Users/Chloe/Downloads/ECC3479/childcare-fees")
+setwd(here())
 
 all_data <- read_csv("data/clean/clean_data.csv")
 
@@ -55,55 +56,36 @@ target_dates <- ymd(c("2018-12-01", "2019-03-01"))
 
 base_fees <- trimmed_data %>% filter(date == "2018-12-01") %>% select(sa3_code, mean_fee) %>%
   rename(base_fee = mean_fee)
+banyule_base <- trimmed_data %>% filter(date == "2019-03-01", sa3_code == "20901") %>% select(mean_fee)
+# Banyule specifically had a high mean fee of 12.20 in 2018 which is not indicative of growth in fees in every subsequent year, as well as neighboring areas
+# Elected to change the base year to the 2019-03-01
+base_fees <- base_fees %>% mutate(base_fee = case_when(sa3_code == "20901" ~ banyule_base$mean_fee, 
+                                                       .default = base_fee))
 trimmed_data <- left_join(trimmed_data, base_fees, by = "sa3_code")
 trimmed_data <- trimmed_data %>%
-  mutate(index_fee = mean_fee/base_fee*100)
+  mutate(index_fee = mean_fee/base_fee*100) # Indexes fees to 2018
 base_cccpi <- trimmed_data %>% filter(date == "2018-12-01") %>% select(sa3_code, cccpi) %>%
   rename(base_cccpi = cccpi)
 trimmed_data <- left_join(trimmed_data, base_cccpi, by = "sa3_code")
 trimmed_data <- trimmed_data %>%
-  mutate(index_cccpi = 100/base_cccpi*cccpi)
+  mutate(index_cccpi = 100/base_cccpi*cccpi) # Indexes the Child Care CPI to 2018 as 100
 base_cpi <- trimmed_data %>% filter(date == "2018-12-01") %>% select(sa3_code, cpi) %>%
   rename(base_cpi = cpi)
 trimmed_data <- left_join(trimmed_data, base_cpi, by = "sa3_code")
 trimmed_data <- trimmed_data %>%
-  mutate(index_cpi = 100/base_cpi*cpi)
-base_fees <- trimmed_data %>% filter(date == "2018-12-01") %>% select(sa3_code, mean_fee) %>%
-  rename(base_fee = mean_fee)
-trimmed_data <- left_join(trimmed_data, base_fees, by = "sa3_code")
-trimmed_data <- trimmed_data %>%
-  mutate(index_fee = mean_fee/base_fee*100)
-base_cccpi <- trimmed_data %>% filter(date == "2018-12-01") %>% select(sa3_code, cccpi) %>%
-  rename(base_cccpi = cccpi)
-trimmed_data <- left_join(trimmed_data, base_cccpi, by = "sa3_code")
-trimmed_data <- trimmed_data %>%
-  mutate(index_cccpi = 100/base_cccpi*cccpi)
+  mutate(index_cpi = 100/base_cpi*cpi) # Indexes CPI to 2018
 base_prescpi <- trimmed_data %>% filter(date == "2024-12-01") %>% select(sa3_code, cpi) %>%
   rename(base_prescpi = cpi)
 trimmed_data <- left_join(trimmed_data, base_prescpi, by = "sa3_code")
 trimmed_data <- trimmed_data %>%
-  mutate(index_prescpi = 100/base_prescpi*cpi)
+  mutate(index_prescpi = 100/base_prescpi*cpi) # Adjusts nominal fees into 2024 $
 
 trimmed_data %>% filter(is.na(index_fee)) %>% arrange(date) %>% head()
 # SA3 that exceeded 5 services after 2018 and therefore have mean fee without a base 2018 fee.
 # These areas are low population regional areas and will be excluded
 trimmed_data <- trimmed_data %>% filter(!is.na(index_fee))
 
-cap_data <- trimmed_data %>% filter(city != "aus")
-
-ggplot(cap_data, aes(x = date, y = index_fee, colour = city)) + geom_point()
-cap_data %>% filter(city == "mel", sa3_code == "20901") %>% select(mean_fee, index_fee, base_fee, date) %>% arrange(date)
-# Banyule specifically had a high mean fee of 12.20 in 2018 which is not indicative of growth in fees in every subsequent year, as well as neighboring areas
-# Elected to change the base year to the 2019-03-01
-
-banyule_base <- trimmed_data %>% filter(date == "2019-03-01", sa3_code == "20901") %>% select(mean_fee)
-base_fees <- base_fees %>% mutate(base_fee = case_when(sa3_code == "20901" ~ banyule_base$mean_fee, 
-                                                       .default = base_fee))
-trimmed_data <- trimmed_data %>% select(-base_fee)
-trimmed_data <- left_join(trimmed_data, base_fees, by = "sa3_code")
-trimmed_data <- trimmed_data %>%
-  mutate(index_fee = mean_fee/base_fee*100)
-cap_data <- trimmed_data %>% filter(city != "aus")
+cap_data <- trimmed_data %>% filter(city != "aus") # Capital cities
 
 cap_data %>% filter(city == "dar", sa3_code == "70103") %>% select(mean_fee, index_fee, base_fee, date) %>% arrange(date)
 # Having looked at the variability of fees which are lower relative to other areas and the map of the area
@@ -125,25 +107,32 @@ ggplot(cap_data, aes(x = date, y = index_cccpi, colour = city)) +
 
 ggplot(cap_data, aes(x = date, y = index_cpi, colour = city)) + geom_point() + # CPI indexed to 2018
   geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
-  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
 # The CPI has increased across capital cities relatively uniformly over time with very high inflation in the post-COVID period by has since slowed
 
 ggplot(cap_data, aes(x = date, y = index_fee, colour = city)) + geom_point() + # Fees indexed to 2018 fee price in SA4
   geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
-  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
 # Fees have grown heterogeneously across cities, with Brisbane, Perth fees growing at more than other cities
 
 ggplot(cap_data, aes(x = date, y = adj_fee, colour = city)) + geom_point() + # Fees in 2024 $
   geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
-  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
 # After adjusting the nominal fees for inflation the hourly cost of childcare has increased by at least $6 per hour in real terms
 
 ggplot(cap_data, aes(x = date, y = mean_fee, colour = city)) + geom_point() + # Nominal Fees
   geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
-  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
 # After the policy changes not only is there a spike in nominal fees, but also the rate of growth in nominal fees is higher than in prior periods
 
 ggplot(cap_data, aes(x = date, y = aprox_sub, colour = city)) + geom_point() + # Approximate subsidy
   geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
   geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
 
+cap_data <- cap_data %>% 
+  mutate(sub_lvl = case_when(date > ymd("2023-07-01") ~ "cheaper",
+                             date < ymd("2023-07-01") & date > ymd("2022-04-01") ~ "sibling",
+                            date < ymd("2022-04-01") ~ "control"),
+         sub_lvl = factor(sub_lvl, levels = c("control", "sibling", "cheaper")),
+         city = factor(city, levels = c("syd", "vic", "bri", "ade", "per", "tas", "dar", "can"))
+  )
