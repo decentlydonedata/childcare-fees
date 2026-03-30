@@ -21,6 +21,7 @@ VARIABLES
     
 Limitations:
     * ASGS editions have changed between 2016 and 2021, therefore analysis made between certain SA3 may have some loss of accuracy
+    * Period of June 2020 is missing
 
 Data contained in data/raw/cpi has been sourced by:
 Australian Bureau of Statistics accessed 13/03/2026

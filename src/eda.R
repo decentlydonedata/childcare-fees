@@ -1,9 +1,9 @@
 library(tidyverse)
 library(patchwork)
 
-setwd("C:/Users/Chloe/Downloads/ECC3479/childcare-fees/data/clean")
+setwd("C:/Users/Chloe/Downloads/ECC3479/childcare-fees")
 
-all_data <- read_csv("clean_data.csv")
+all_data <- read_csv("data/clean/clean_data.csv")
 
 prices <- c("mean_fee", "cccpi", "cpi")
 

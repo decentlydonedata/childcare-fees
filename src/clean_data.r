@@ -2,15 +2,16 @@
 library(tidyverse)
 library(readxl)
 library(readabs)
+library(here)
 
-setwd("C:/Users/Chloe/Downloads/ECC3479/childcare-fees/data/raw/cpi")
+setwd(here("data/raw/cpi"))
 
 ts_start <- ymd("2018-12-1")
 ts_end <- ymd("2024-12-1")
 
 raw_cpi <- read_abs(cat_no = "6401.0", tables = 9)
 
-path <- "C:/Users/Chloe/Downloads/ECC3479/childcare-fees/data/raw/cpi/640107.xlsx"
+path <- here("data/raw/cpi/640107.xlsx")
 
 id_map <- tibble(
   id = c("A2331566X", "A2331571T", "A2331576C", "A2331581W", 
@@ -67,7 +68,7 @@ all_states <- all_states %>%
 
 file_names <- tibble(
               file_name = 
-              c("excel_tables_-_december_quarter_2018_v2",
+              c(
               "excel_tables_-_march_quarter_2019",
               "june_quarter_2019",
               "september_quarter_2019",
@@ -92,7 +93,7 @@ file_names <- tibble(
               "Attachment C - Tables to be published on the website - Sep qtr 2024",  
               "Child Care Subsidy data tables - December quarter 2024"), 
                skip_value = 
-  c(6,1,1,1,2,2,1,2,2,1,1,1,1,2,2,1,1,1,1,2,1,1,1,1)
+  c(1,1,1,2,2,1,2,2,1,1,1,1,2,2,1,1,1,1,2,1,1,1,1)
 )
 
 get_fees <- function(target_path, skip_value) {
@@ -111,11 +112,8 @@ get_fees <- function(target_path, skip_value) {
       )
 }
 
-full_paths <- set_names(file_names) %>% 
-  paste0("C:/Users/Chloe/Downloads/ECC3479/childcare-fees/data/raw/fees/", ., ".xlsx") 
-
 all_fees <- file_names %>%
-  mutate(full_path = paste0("C:/Users/Chloe/Downloads/ECC3479/childcare-fees/data/raw/fees/", file_name, ".xlsx")) %>%
+  mutate(full_path = paste0(here(),"/data/raw/fees/", file_name, ".xlsx")) %>%
   # pmap iterates over the columns of the tibble
   pmap_dfr(function(file_name, skip_value, full_path) {
     tryCatch({
@@ -126,7 +124,7 @@ all_fees <- file_names %>%
     })
   })
 
-dec_2018 <- read_excel("C:/Users/Chloe/Downloads/ECC3479/childcare-fees/data/raw/fees/excel_tables_-_december_quarter_2018_v2.xlsx", 
+dec_2018 <- read_excel(paste0(here(),"/data/raw/fees/excel_tables_-_december_quarter_2018_v2.xlsx"), 
            range = "CBDC fees!B7:K340") %>%
   select(
     mean_fee = as.numeric(contains("per")), 
@@ -179,7 +177,4 @@ all_states <- all_states %>% group_by(date)
 
 all_data <- left_join(all_fees, all_states, by = c("date", "city"))
 
-
-setwd("C:/Users/Chloe/Downloads/ECC3479/childcare-fees/data")
-
-write_csv(all_data, file = "clean/clean_data.csv")
+write_csv(all_data, file = "data/clean/clean_data.csv")
