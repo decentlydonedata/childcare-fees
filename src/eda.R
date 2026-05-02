@@ -41,16 +41,18 @@ all_data %>% filter(city == "can", service_count < 12) %>% head()
 # These observations can be accounted for as the Canberra East area which is largely nature reserves and has a small population.
 
 ggplot(all_data, aes(x = date, y = mean_fee, colour = city)) + geom_point()
+
 # There is no available data for June 2020 likely due to nation wide lock downs
 # Promising increase in childcare fees
 ggplot(all_data, aes(x = date, y = cccpi, colour = city)) + geom_point()
+
 # The September cccpi for all observations seemed to be much lower due to residual Covid effects 
 # For the purpose of regression analysis the whole time period will be excluded
 # Can see the policy changes to siblings in June 2022 and the Cheaper Childcare Bill in late 2023
 
-
 #### Adjustments and changes
-trimmed_data <- all_data %>% filter(date != "2020-9-1") # Without Covid observations
+trimmed_data <- all_data %>% filter(date != "2020-9-1",# Without Covid observations
+                                    sa3_code != "80103") # Without Canberra East
 
 target_dates <- ymd(c("2018-12-01", "2019-03-01"))
 
@@ -94,12 +96,18 @@ cap_data <- cap_data %>% filter(sa3_code != "70103")
 cap_data <- cap_data %>%
   mutate(adj_fee = mean_fee*index_prescpi/100,
          prop_above = above_cap/service_count,
-         aprox_sub = index_fee - index_cccpi)
+         aprox_sub = index_fee - index_cccpi,
+         sub_lvl = case_when(date > ymd("2023-07-01") ~ "cheaper",
+                             date < ymd("2023-07-01") & date > ymd("2022-04-01") ~ "sibling",
+                             date < ymd("2022-04-01") ~ "control"),
+         sub_lvl = factor(sub_lvl, levels = c("control", "sibling", "cheaper")),
+         city = factor(city, levels = c("syd", "mel", "bri", "ade", "per", "tas", "dar", "hob","can"))
+  )
 
 ggplot(cap_data, aes(x = date, y = index_cccpi, colour = city)) + 
   geom_point() + # Childcare CPI indexed to 2018
   geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
-  geom_vline(xintercept = ymd("2022-02-01"), linetype = "dashed")
+  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
 # The changes to out of pocket childcare costs have been punctuated by policy changes
 # The addition of a sibling discount in 2022 and the Cheaper childcare bill in 2023
 # It should be noted that the rate of child care cost growth after these policy changes are visibly higher (steeper slope)
@@ -122,17 +130,26 @@ ggplot(cap_data, aes(x = date, y = adj_fee, colour = city)) + geom_point() + # F
 
 ggplot(cap_data, aes(x = date, y = mean_fee, colour = city)) + geom_point() + # Nominal Fees
   geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
-  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
+  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed") 
+  
 # After the policy changes not only is there a spike in nominal fees, but also the rate of growth in nominal fees is higher than in prior periods
 
 ggplot(cap_data, aes(x = date, y = aprox_sub, colour = city)) + geom_point() + # Approximate subsidy
   geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
-  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
+  geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed") + 
+  theme_bw() +
+  ylab("Childcare Subsidy Indexed to 2018") +
+  xlab("") +
+  ggtitle("Change in Childcare Subsidy over time") 
+  
+# The approximate level of subsidy is visualized as after the two policy changes
 
-cap_data <- cap_data %>% 
-  mutate(sub_lvl = case_when(date > ymd("2023-07-01") ~ "cheaper",
-                             date < ymd("2023-07-01") & date > ymd("2022-04-01") ~ "sibling",
-                            date < ymd("2022-04-01") ~ "control"),
-         sub_lvl = factor(sub_lvl, levels = c("control", "sibling", "cheaper")),
-         city = factor(city, levels = c("syd", "vic", "bri", "ade", "per", "tas", "dar", "can"))
-  )
+write_csv(cap_data, file = "data/clean/capital_city_data.csv")
+
+subset_control <- cap_data %>% filter(sub_lvl == "control")
+subset_sib <- cap_data %>% filter(sub_lvl == "sibling")
+subset_che <- cap_data %>% filter(sub_lvl == "cheaper")
+
+summary(lm(data = subset_control, mean_fee ~ date + city))
+summary(lm(data = subset_sib, mean_fee ~ date + city))
+summary(lm(data = subset_che, mean_fee ~ date + city))
