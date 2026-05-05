@@ -61,12 +61,14 @@ Run this script to perform initial data validation and visualization:
 * Exports tables and graphs to the `output/` folder.
 * Trims data just for capital cities as 'data/clean/capital_city_data.csv'
 
-### 3. Exploratory Analysis (`src/its.r`)
+### 3. Econometric Analysis (`src/its.r`)
 Run this script to perform econometric analysis and robustness tests:
 * Generates visualisation of model
 * Implementaion into a panel dataframe
 * Main results with clustered standard errors
 * Robustness checks
+
+### 4. Econometric Analysis writeup ('docs/econometricanalysis.tex')
 ---
 
 ## Limitations
