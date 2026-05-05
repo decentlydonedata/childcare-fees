@@ -94,14 +94,14 @@ cap_data %>% filter(city == "dar", sa3_code == "70103") %>% select(mean_fee, ind
 # Litchfield is significantly more regional than the other Darwin areas and will be excluded from capital city analysis
 cap_data <- cap_data %>% filter(sa3_code != "70103")
 cap_data <- cap_data %>%
-  mutate(adj_fee = mean_fee*index_prescpi/100,
+  mutate(real_fee = mean_fee*index_prescpi/100,
          prop_above = above_cap/service_count,
          aprox_sub = index_fee - index_cccpi,
          sub_lvl = case_when(date > ymd("2023-07-01") ~ "cheaper",
                              date < ymd("2023-07-01") & date > ymd("2022-04-01") ~ "sibling",
                              date < ymd("2022-04-01") ~ "control"),
          sub_lvl = factor(sub_lvl, levels = c("control", "sibling", "cheaper")),
-         city = factor(city, levels = c("syd", "mel", "bri", "ade", "per", "tas", "dar", "hob","can"))
+         city = factor(city, levels = c("syd", "mel", "bri", "ade", "per", "dar", "hob","can"))
   )
 
 ggplot(cap_data, aes(x = date, y = index_cccpi, colour = city)) + 
@@ -123,7 +123,7 @@ ggplot(cap_data, aes(x = date, y = index_fee, colour = city)) + geom_point() + #
   geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
 # Fees have grown heterogeneously across cities, with Brisbane, Perth fees growing at more than other cities
 
-ggplot(cap_data, aes(x = date, y = adj_fee, colour = city)) + geom_point() + # Fees in 2024 $
+ggplot(cap_data, aes(x = date, y = real_fee, colour = city)) + geom_point() + # Fees in 2024 $
   geom_vline(xintercept = ymd("2023-07-01"), linetype = "dashed") +
   geom_vline(xintercept = ymd("2022-04-01"), linetype = "dashed")
 # After adjusting the nominal fees for inflation the hourly cost of childcare has increased by at least $6 per hour in real terms
@@ -153,3 +153,5 @@ subset_che <- cap_data %>% filter(sub_lvl == "cheaper")
 summary(lm(data = subset_control, mean_fee ~ date + city))
 summary(lm(data = subset_sib, mean_fee ~ date + city))
 summary(lm(data = subset_che, mean_fee ~ date + city))
+
+summary(cap_data$city)

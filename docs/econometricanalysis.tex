@@ -1,0 +1,83 @@
+\documentclass[12pt]{article}
+
+% Packages
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{biblatex}
+
+% Line spacing
+\doublespacing
+
+\begin{document}
+
+\section{Methodology}
+This study examines the impact of two policy interventions on fees using a panel interrupted time series framework. The analysis exploits variation across geographic units over time and estimates models using a fixed effects estimator implemented in the \texttt{plm} package. The Higher Childcare Subsidy (HCCS) was applied nationwide on 7 March 2022, and the Cheaper Child Care Bill (CCCB) was applied on 1 July 2023. 
+
+Let $i$ index geographic units and $t$ index time. The baseline specification is:
+\begin{equation}
+\text{real\_fee}_{it} =
+\beta_1 \text{HCCS}_{it}
++ \beta_2 \text{CCCB}_{it}
++ \gamma t
++ \delta_1 \text{TimePostHCCS}_{it}
++ \delta_2 \text{TimePostCCCB}_{it}
++ \alpha_i
++ \varepsilon_{it}
+\end{equation}
+where $\alpha_i$ captures time-invariant unit-specific effects and $\varepsilon_{it}$ is the idiosyncratic error term. The variables $\text{HCCS}_{it}$ and $\text{CCCB}_{it}$ are binary indicators equal to one after the implementation of each respective policy. The variables $\text{TimePostHCCS}_{it}$ and $\text{TimePostCCCB}_{it}$ capture post-intervention slope changes and are defined as:
+
+\begin{equation}
+\text{TimePost}_{kit} = \max(0, t - T_k), \quad k \in \{HCCS,CCCB\}
+\end{equation}
+
+where $T_k$ denotes the implementation time of policy $k$.
+
+\clearpage
+
+\section{Results}
+\begin{table}[htbp]
+\centering
+\caption{Regression Results: Real Fee}
+\begin{tabular}{lc}
+\hline
+\textbf{Variable} & \textbf{Coefficient} \\
+\hline
+HCCS        & 0.2789*** \\
+            & (0.0088)  \\
+
+CCCB        & 0.0168*   \\
+            & (0.0092)  \\
+
+Time        & 0.1581*** \\
+            & (0.0020)  \\
+
+TimePostHCCS& 0.2132*** \\
+            & (0.0038)  \\
+
+TimePostCCCB& -0.0418*** \\
+            & (0.0046)  \\
+
+\hline
+\multicolumn{2}{l}{\footnotesize Standard errors in parentheses} \\
+\multicolumn{2}{l}{\footnotesize *** $p<0.01$, ** $p<0.05$, * $p<0.1$} \\
+\multicolumn{2}{l}{\footnotesize $R^2 = 0.98868$, $n = 151$, $T = 23$, $N = 3473$}
+\multicolumn{2}{l}{\footnotesize Unit fixed effects included. Standard errors clustered at, the SA3 level.}
+
+\end{tabular}
+\end{table}
+
+In this panel interrupted time series model with real (inflation-adjusted) childcare fees measured in dollars per quarter, there is a strong underlying upward trend, with fees increasing by \$0.1581 per quarter (p $<$ 0.01) prior to any policy changes. The introduction of the higher childcare subsidy (HCCS) is associated with an immediate and statistically significant increase of \$0.2789 in fees (p $<$ 0.01), indicating a discrete upward shift at the time of implementation. In addition, the post-HCCS trend increases by \$0.2132 per quarter (p $<$ 0.01), implying that fee growth accelerated substantially after the policy. This results in a combined post-HCCS trend of approximately \$0.3713 per quarter (0.1581 + 0.2132).
+
+For the Cheaper Child Care Bill (CCCB), the estimated level effect is much smaller, at \$0.0168 (p $<$ 0.1), suggesting only weak evidence of an immediate increase in fees at introduction. However, the post-CCCB trend change is $- \$0.0418$ per quarter (p $<$ 0.01), indicating a statistically significant slowing in the rate of fee growth. This reduces the post-CCCB trend to approximately \$0.3295 per quarter (0.3713 $-$ 0.0418). Overall, these results indicate that while real childcare fees were already increasing over time, the HCCS reform is associated with both a discrete increase and a marked acceleration in quarterly fee growth, whereas the CCCB reform appears to have only a minimal immediate effect but significantly dampens the subsequent growth rate of fees, even though fees continue to rise overall.
+
+\section{Limitations}
+Interrupted time series (ITS) estimates in this setting rely on the assumption that, absent reform, childcare fees would have continued along a stable pre-policy trend. This is threatened by concurrent changes occurring around the transition from the Child Care Benefit (CCB) to the Child Care Subsidy (CCS), including broader regulatory changes, labour cost pressures, and macroeconomic conditions, which may independently affect fees.
+
+A further concern is pre-trend instability: if fees were already changing non-linearly before the policy, the estimated break may reflect continuation of existing dynamics rather than a true structural shift. Anticipation effects may also bias results if providers adjusted prices or reporting in advance of the reform. In addition, compositional changes in the observed sample of childcare providers—through entry, exit, or changes in reporting coverage—may confound true price effects with shifts in the underlying sample. Finally, results can be sensitive to functional form assumptions about trend specification before and after the intervention.
+
+\end{document}
