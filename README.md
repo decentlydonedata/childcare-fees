@@ -59,7 +59,14 @@ Run this script to perform initial data validation and visualization:
 * Generates initial indexing of fee growth against inflation.
 * Conducts outlier detection and discusses the project scope.
 * Exports tables and graphs to the `output/` folder.
+* Trims data just for capital cities as 'data/clean/capital_city_data.csv'
 
+### 3. Exploratory Analysis (`src/its.r`)
+Run this script to perform econometric analysis and robustness tests:
+* Generates visualisation of model
+* Implementaion into a panel dataframe
+* Main results with clustered standard errors
+* Robustness checks
 ---
 
 ## Limitations
