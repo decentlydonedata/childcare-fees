@@ -16,3 +16,7 @@
 | `city` | String | Australian capital city (e.g., Melbourne, Sydney) | Name | N/A | N/A |
 | `cccpi` | Numeric | Child Care Consumer Price Index | Index | 49.7 | 183.7 |
 | `cpi` | Numeric | Consumer Price Index (All Groups) | Index | 110.1 | 140.6 |
+
+# Codebook for capital_city_data.csv
+
+

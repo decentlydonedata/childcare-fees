@@ -49,14 +49,14 @@ data <- data %>%
   arrange(date) %>% 
   group_by(sa3_code) %>%
   mutate(
-         timesince1 = time - 12,
-         timesince1 = ifelse(timesince1<0,0,timesince1),
-         timesince2 = time - 17,
-         timesince2 = ifelse(timesince2<0,0,timesince2),
+         timepostHCCS = time - 12,
+         timepostHCCS = ifelse(timepostHCCS<0,0,timepostHCCS),
+         timepostCCCB = time - 17,
+         timepostCCCB = ifelse(timepostCCCB<0,0,timepostCCCB),
          date = yearquarter(date),
-         treatment1 = case_when(date >= subsidy1 ~ 1,
+         HCCS = case_when(date >= subsidy1 ~ 1,
                                   date < subsidy1 ~ 0),
-         treatment2 = case_when(date >=subsidy2 ~ 1,
+         CCCB = case_when(date >=subsidy2 ~ 1,
                                 date < subsidy2 ~ 0),
          sa3_code = as.factor(sa3_code),
          unit_id = as.numeric(sa3_code),
@@ -68,27 +68,27 @@ data1 <- data %>% filter(date>=subsidy1)
 data2 <- data %>% filter(date>=subsidy2)
 
 mod0 <- lm(real_fee ~ time, data = data0)
-mod1 <- lm(real_fee ~ treatment1 + time + timesince1, data = data1)
-mod2 <- lm(real_fee ~ treatment2 + time + timesince2, data = data2)
+mod1 <- lm(real_fee ~ HCCS + time + timepostHCCS, data = data1)
+mod2 <- lm(real_fee ~ CCCB + time + timepostCCCB, data = data2)
 
 newdf <- tibble(time = 1:23, 
-                treatment1 = c(rep(0,12),rep(1,11)),
-                treatment2 = c(rep(0,17),rep(1,6)),
-                timesince1 = c(rep(0,12),1:11),
-                timesince2 = c(rep(0,17),1:6))
+                HCCS = c(rep(0,12),rep(1,11)),
+                CCCB = c(rep(0,17),rep(1,6)),
+                timepostHCCS = c(rep(0,12),1:11),
+                timepostCCCB = c(rep(0,17),1:6))
 newdf <- newdf %>% mutate(m0 = predict(mod0, newdf),
                           m1 = predict(mod1, newdf),
                           m2 = predict(mod2, newdf)) %>%
   pivot_longer(c(m0,m1,m2))
 
 temp <- newdf %>% 
-  filter(timesince2 == 0, name == "m2")
+  filter(timepostCCCB == 0, name == "m2")
 newdf <- anti_join(newdf,temp)
 temp <- newdf %>%
-  filter(timesince1 == 0, name == "m1")
+  filter(timepostHCCS == 0, name == "m1")
 newdf <- anti_join(newdf,temp)
 temp <- newdf %>%
-  filter(name == "m1", treatment2 == 1)
+  filter(name == "m1", CCCB == 1)
 newdf <- anti_join(newdf, temp)
 
 vis <- newdf %>% ggplot(
@@ -104,11 +104,11 @@ vis
 pdata <- pdata.frame(data, index = c("sa3_code", "time")) %>%
   mutate(time = as.numeric(time))
 
-pmod1 <- plm(real_fee ~ treatment1 + time + timesince1, 
+pmod1 <- plm(real_fee ~ HCCS + time + timepostHCCS, 
              data = pdata,
              index = index,
              model = "within")
-pmod2 <- plm(real_fee ~ treatment2 + time + timesince2, 
+pmod2 <- plm(real_fee ~ CCCB + time + timepostCCCB, 
             data = pdata,
             index = index,
             model = "within") 
@@ -119,8 +119,8 @@ coeftest(pmod1, vcov = vcovHC(pmod1, type = "HC1", cluster = "group"))
 coeftest(pmod2, vcov = vcovHC(pmod2, type = "HC1", cluster = "group")) 
 
 ### MAIN RESULTS
-# Clustered Standard  Errors
-pmod3 <- plm(real_fee ~ treatment1 + treatment2 + time + timesince1 + timesince2, 
+# Clustered Standard Errors
+pmod3 <- plm(real_fee ~ HCCS + CCCB + time + timepostHCCS + timepostCCCB, 
              data = pdata,
              index = index,
              model = "within")
@@ -128,7 +128,7 @@ coeftest(pmod3, vcov = vcovHC(pmod3, type = "HC1", cluster = "group"))
 
 ### Robustness
 # Without Inflation adjustment
-pmod4 <- plm(mean_fee ~ treatment1 + treatment2 + time + timesince1 + timesince2, 
+pmod4 <- plm(mean_fee ~ HCCS + CCCB + time + timepostHCCS + timepostCCCB, 
              data = pdata,
              index = index,
              model = "within")
@@ -140,21 +140,12 @@ pmod_dk <- coeftest(pmod3, vcov = vcovSCC(pmod3, type = "HC1"))
 pmod_dk
 
 # Geographic Adjustments
-pmod_geo <- plm(real_fee ~ treatment1 + treatment2 + time + timesince1 + timesince2 + unit_time, 
+pmod_geo <- plm(real_fee ~ HCCS + CCCB + time + timepostHCCS + timepostCCCB + unit_time, 
              data = pdata,
              index = index,
              model = "within")
 summary(pmod_geo)
 coeftest(pmod_geo, vcov = vcovHC(pmod_geo, type = "HC1", cluster = "group")) 
-
-# Flexible time robustness
-pmod_timeflex <- plm(real_fee ~ treatment1 + treatment2 + factor(time), 
-             data = pdata,
-             index = index,
-             model = "within")
-
-coefficients(pmod_timeflex)
-summary(pmod_timeflex)
 
 ## Robustness 
 get_coefs <- function(model, vcov_mat, label) {
@@ -169,13 +160,16 @@ get_coefs <- function(model, vcov_mat, label) {
   )
 }
 
+
+vcovHC(pmod3, type = "HC1", cluster = "group")
+
 df_list <- list(
   get_coefs(pmod3, vcovHC(pmod3, type = "HC1", cluster = "group"), "pmod3_HC1"),
   get_coefs(pmod4, vcovHC(pmod4, type = "HC1", cluster = "group"), "pmod4_HC1"),
   get_coefs(pmod3, vcovSCC(pmod3, type = "HC1"), "pmod3_SCC"),
-  get_coefs(pmod_geo, vcovHC(pmod_geo, type = "HC1", cluster = "group"), "pmod_geo"),
-  get_coefs(pmod_timeflex, vcovHC(pmod_timeflex, type = "HC1", cluster = "group"), "pmod_timeflex")
+  get_coefs(pmod_geo, vcovHC(pmod_geo, type = "HC1", cluster = "group"), "pmod_geo")
 )
+
 
 table <- bind_rows(df_list) %>%
   filter(!str_detect(term, "factor"))
@@ -184,37 +178,38 @@ setwd(here())
 write_csv(table, file = "output/robustness_table.csv")
 
 # Subsections of data
-## Time series slicing
-pmod_
+
+test <- all_results %>% pivot_wider(names_from = city, values_from = estimate)
 
 ## Subgroup by state
 cities <- c("syd", "mel", "bri", "ade", "per", "dar", "hob")
-
 run_model <- function(city_name) {
   pdata_city <- pdata %>% filter(city == city_name)
   
-  pmod <- plm(real_fee ~ treatment1 + treatment2 + time + timesince1 + timesince2, 
+  pmod <- plm(real_fee ~ HCCS + CCCB + time + timepostHCCS + timepostCCCB, 
               data = pdata_city,
               index = index,
               model = "within")
   
   result <- coeftest(pmod, vcov = vcovHC(pmod, type = "HC1", cluster = "group"))
-  
   return(result)
 }
-
 results <- lapply(cities, run_model)
 names(results) <- cities
-
-results$syd
-
-# Functional Forms
-
+all_results <- imap_dfr(results, ~{
+  as.data.frame(.x[, 1:2]) %>%
+    rownames_to_column("term") %>%
+    mutate(city = .y)
+}) %>%
+  rename(
+    estimate = Estimate,
+    std_error = `Std. Error`
+  )
 
 # Placebo
 
-fake_dates1 <- c(4, 6, 8)   # placebo for treatment1
-fake_dates2 <- c(8, 10, 12) # placebo for treatment2
+fake_dates1 <- c(4, 6, 8)   # placebo for HCCS
+fake_dates2 <- c(8, 10, 12) # placebo for CCCB
 
 placebo_results <- list()
 
@@ -224,19 +219,19 @@ for (d1 in fake_dates1) {
     df_placebo <- data %>%
       mutate(
         # fake treatment indicators
-        treatment1p = ifelse(time >= d1, 1, 0),
-        treatment2p = ifelse(time >= d2, 1, 0),
+        HCCSp = ifelse(time >= d1, 1, 0),
+        CCCBp = ifelse(time >= d2, 1, 0),
         
         # fake post-trend (your timesince structure)
-        timesince1p = pmax(time - d1, 0),
-        timesince2p = pmax(time - d2, 0)
+        timepostHCCSp = pmax(time - d1, 0),
+        timepostCCCBp = pmax(time - d2, 0)
       )
     
     pdata_placebo <- pdata.frame(df_placebo, index = c("sa3_code", "time")) %>%
       mutate(time = as.numeric(time))
     
     model <- plm(
-      real_fee ~ treatment1p + treatment2p + time + timesince1p + timesince2p,
+      real_fee ~ HCCSp + CCCBp + time + timepostHCCSp + timepostCCCBp,
       data = pdata_placebo,
       model = "within"
     )
